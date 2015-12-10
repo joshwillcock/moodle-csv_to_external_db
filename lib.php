@@ -70,7 +70,7 @@ class convert_users {
         if ($conn->connect_error) {
             die("Connection Failed: ".$conn->connect_error);
         }
-        $this->msg('Database Connection Established');
+        $this->msg('Database Connection Established: Get Users');
         $result = $conn->query('SELECT username, email FROM `userimport`');
         // $resultArray = array();
         while ($row = $result->fetch_assoc()) {
@@ -104,6 +104,7 @@ class convert_users {
 }
 class user_sync {
     private $log;
+    public $rejectedEmailUsers = 0;
     // Class constructor creates logging object
     public function __construct(debug_log $log) {
         $this->log = $log;
@@ -172,7 +173,7 @@ class user_sync {
         if ($conn->connect_error) {
             die("Connection Failed: ".$conn->connect_error);
         }
-        $this->msg('Database Connection Established');
+        $this->msg('Database Connection Established: Process Data');
         foreach($data as $user) {
             if ($firstuser==true) {
                 $getKeys = array_keys($user);
@@ -217,13 +218,19 @@ class user_sync {
                 }
             }
             $queryBuild .= ') ON DUPLICATE KEY UPDATE `username` = "'.$user['username'].'", `email`="'.$user['email'].'"';
-            $result = $conn->query($queryBuild);
-            if ($result == true) {
-                $this->msg('User '.$user['username'].' has been created/updated');
-                $outcome->success++;
+            if (!filter_var($user['email'], FILTER_VALIDATE_EMAIL)) {
+                $this->msg('User Skipped: Invalid Email Address: '.$user['username']);
+                $this->rejectedEmailUsers++;
+                $this->msg('Failed Email Address: '.$user['email']);
             }else{
-                $this->msg('User '.$user['username'].' has failed to create/update');
-                $outcome->failure++;
+                $result = $conn->query($queryBuild);
+                if ($result == true) {
+                    $this->msg('User '.$user['username'].' has been created/updated');
+                    $outcome->success++;
+                }else{
+                    $this->msg('User '.$user['username'].' has failed to create/update');
+                    $outcome->failure++;
+                }
             }
         }
         $conn->close();
@@ -245,6 +252,7 @@ class user_sync {
             $outcome = $this->processData($data);
             $this->msg('Total Success: '.$outcome->success);
             $this->msg('Total Failure: '.$outcome->failure);
+            $this->msg('Rejected Emails: '.$this->rejectedEmailUsers);
         }
         if ($CFG->debugging) {
             $this->log->close();
