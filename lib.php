@@ -35,7 +35,7 @@ class convert_users {
     public function __construct(debug_log $log) {
         $this->log = $log;
     }
-    
+
     // Process to update users Master function
     public function execute() {
         global $CFG;
@@ -62,7 +62,7 @@ class convert_users {
             $this->log->close();
         }
     }
-    
+
     // Gets list of users from the external DB and puts them in an array
     private function getUsers() {
         global $CFG;
@@ -81,7 +81,7 @@ class convert_users {
         }
         $conn->close();
         return $resultArray;
-                
+
     }
     // Updates an individual user returns outcome as bool
     private function updateUser($user) {
@@ -92,7 +92,7 @@ class convert_users {
         }
         $response = $conn->query('UPDATE mdl_user SET auth="db" WHERE username="'.$user->username.'" AND email="'.$user->email.'"');
         return $response;
-                
+
     }
     private function msg($msg) {
         global $CFG;
@@ -112,18 +112,20 @@ class user_sync {
     // Finds the Zip - Unzip the file and finds the file returns filename
     private function findFile() {
         global $CFG;
-        $zipFileName = glob($CFG->address . $CFG->zipFileName);
-        $this->msg('Looking for file: '.$CFG->address . $CFG->zipFileName.'');
-        $zip = new ZipArchive;
-        $result = $zip->open($zipFileName[0]);
-        if ($result === TRUE) {
-            $this->msg('Found file beginning unzip ');
-            $zip->extractTo($CFG->address);
-            $zip->close();
-            $this->msg('Unzipped archive successfully');
-        }else{
-            $this->msg('Unable to locate zipped archive');
-            exit;
+        if($CFG->zip){
+            $zipFileName = glob($CFG->address . $CFG->zipFileName);
+            $this->msg('Looking for file: '.$CFG->address . $CFG->zipFileName.'');
+            $zip = new ZipArchive;
+            $result = $zip->open($zipFileName[0]);
+            if ($result === TRUE) {
+                $this->msg('Found file beginning unzip ');
+                $zip->extractTo($CFG->address);
+                $zip->close();
+                $this->msg('Unzipped archive successfully');
+            }else{
+                $this->msg('Unable to locate zipped archive');
+                exit;
+            }
         }
         $filename = glob($CFG->address . $CFG->extractedFileName);
         $this->msg('Looking for file: '.$CFG->address.$CFG->extractedFileName);
@@ -158,7 +160,7 @@ class user_sync {
                     fclose($handle);
                 }
                 $this->msg('Rows found: '.count($data));
-                return $data; 
+                return $data;
         }
     } // Close CSV to array
 
@@ -217,6 +219,7 @@ class user_sync {
                     $queryBuild .=',"'.$user[$userkey].'"';
                 }
             }
+            $user = $this->customize($user);
             $queryBuild .= ') ON DUPLICATE KEY UPDATE `username` = "'.$user['username'].'", `email`="'.$user['email'].'"';
             if (!filter_var($user['email'], FILTER_VALIDATE_EMAIL)) {
                 $this->msg('User Skipped: Invalid Email Address: '.$user['username']);
@@ -258,5 +261,8 @@ class user_sync {
             $this->log->close();
         }
     } // Close execute function
+    public function customize($user){
+        return $user;
+    }
 } // Close Class
 ?>
