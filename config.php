@@ -22,4 +22,5 @@
     $CFG->debuggingroot = '/home/mylocation/logs/';          // Location to write log
     $CFG->emailaddress = 'me@mydomain.com';                  // Email address to send log to if write fails
     $CFG->forcesendemail = false;                            // Force Email To Send Even With Saved Log
+    $CFG->zip = TRUE;                                        // Will the CSV Be Zipped
 ?>
